@@ -1,39 +1,38 @@
 {
   "report_metadata": {
-    "scan_timestamp": "0000-00-00T00:00:00Z",
-    "framework_version": "1.0.0"
+    "scan_timestamp": "2026-08-11T14:25:00Z",
+    "framework_version": "1.2.0",
+    "target_hash_sha256": "string"
   },
-  "file_identity": {
-    "filename": "string",
-    "size_bytes": 0,
-    "hashes": {
-      "sha256": "string"
-    }
-  },
-  "pe_header_telemetry": {
-    "address_of_entry_point": "0x00000000",
-    "image_base_address": "0x00000000",
+  "binary_structural_telemetry": {
+    "entry_point_rva": "0x00000000",
+    "image_base_va": "0x00000000",
+    "subsystem_type_id": 0,
+    "calculated_import_density": 0.0,
     "sections": [
       {
         "name": "string",
-        "entropy": 0.0
+        "raw_size_bytes": 0,
+        "virtual_size_bytes": 0,
+        "shannon_entropy": 0.0,
+        "is_hollowed_cave": false
       }
     ]
   },
-  "import_address_table_analysis": {
+  "heuristic_signature_matches": {
     "total_imports_resolved": 0,
-    "triggered_heuristic_matches": 0,
-    "resolved_symbols": [
+    "triggered_rules_count": 0,
+    "matched_symbols": [
       {
         "module": "string",
         "symbol_name": "string",
-        "category": "string",
-        "severity": "string"
+        "behavioral_category": "string",
+        "assigned_weight": 0
       }
     ]
   },
   "triage_summary_verdict": {
-    "cumulative_risk_score": 0,
-    "final_verdict": "string"
+    "aggregated_risk_score": 0,
+    "final_verdict_status": "STATUS_ASSET_STRUCTURE_CLEAN"
   }
 }
