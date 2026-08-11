@@ -1,0 +1,26 @@
+{
+  "framework_metadata": {
+    "version": "1.0.0",
+    "environment": "production"
+  },
+  "ingestion_pipeline": {
+    "supported_extensions": [".exe", ".dll", ".sys"],
+    "max_file_size_bytes": 104857600,
+    "recursive_directory_scan": true
+  },
+  "static_analysis_heuristics": {
+    "verify_pe_checksum": true,
+    "max_allowed_sections": 8,
+    "entropy_triage": {
+      "calculate_per_section": true,
+      "block_size_bytes": 4096,
+      "suspicious_threshold": 7.2,
+      "critical_packed_threshold": 7.85
+    }
+  },
+  "telemetry_output": {
+    "generate_json_report": true,
+    "pretty_print_json": true,
+    "target_destination_directory": "./reports/triage_dumps/"
+  }
+}
