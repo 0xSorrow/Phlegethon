@@ -1,0 +1,39 @@
+{
+  "report_metadata": {
+    "scan_timestamp": "0000-00-00T00:00:00Z",
+    "framework_version": "1.0.0"
+  },
+  "file_identity": {
+    "filename": "string",
+    "size_bytes": 0,
+    "hashes": {
+      "sha256": "string"
+    }
+  },
+  "pe_header_telemetry": {
+    "address_of_entry_point": "0x00000000",
+    "image_base_address": "0x00000000",
+    "sections": [
+      {
+        "name": "string",
+        "entropy": 0.0
+      }
+    ]
+  },
+  "import_address_table_analysis": {
+    "total_imports_resolved": 0,
+    "triggered_heuristic_matches": 0,
+    "resolved_symbols": [
+      {
+        "module": "string",
+        "symbol_name": "string",
+        "category": "string",
+        "severity": "string"
+      }
+    ]
+  },
+  "triage_summary_verdict": {
+    "cumulative_risk_score": 0,
+    "final_verdict": "string"
+  }
+}
