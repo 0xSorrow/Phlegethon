@@ -1,63 +1,44 @@
-# Phlegethon Framework Data Exchange Protocol
+# Phlegethon High-Performance Inter-Process Data Exchange Specification
 
-This document defines the formal communication contract, data serialization schemas, and interoperability standards used for exchanging data between the native C++ engine (`Analyzer/`) and the high-level Python pipeline (`Analysis/`).
+## 👥 Development & Author
+*   **0xSorrow** 
+*   **0xSolitude** 
+*   **0xBlaze** 
 
-## 1. Data Exchange Architecture
+---
 
-The framework relies on a decoupled, pipeline-driven architecture. To prevent language-specific memory management conflicts, component synchronization is maintained via structured data channels:
+This document details the communication rules, string formatting protocols, and system pipeline interfaces used for moving data between the native C++ engine (`Analyzer/`) and the high-level Python orchestration layer (`Analysis/`).
+
+## 1. Stream Interoperability Mode
+
+To maintain maximum portability and keep execution completely isolated from common language interface bottlenecks, data exchange occurs entirely through standard I/O pipes. 
 
 ```text
-  [ Target Binary ]
-         │
-         ▼
-  [ Analyzer ]  ──(Stdout Pipe / Structured JSON String)──► [ Python Pipeline ]
-  (C++ Header Parser)                                              (Orchestration / Math)
-                                                                            │
-                                                                            ▼
-                                                                   [ Unified Report ]
-                                                                   (Schema-Valid JSON)
+  [ Target File Ingestion ]
+             │
+             ▼
+   [ Analyzer Subsystem ] ──── (Stdout Pipe Stream: Minified JSON object) ────► [ Analysis Pipeline ]
+    (C++ File Deserializer)                                                       (Python Engine / Loader)
 ```
 
-## 2. Low-Level Component Pipeline Signature
+## 2. Native Output Specification
 
-When the native C++ engine analyzes a binary, it prints a single-line, standardized JSON data object directly to the standard output (`stdout`) stream. This allows the Python pipeline to safely trap, decode, and use the telemetry without needing a shared memory map.
+The C++ executable parses structural metrics, creates a single-line minified JSON payload, and outputs it to `stdout`. The string output must adhere to the following formatting requirements:
 
-### Required Telemetry Schema Fields
+*   **Minification Requirement:** The output cannot contain newline (`\n`) formatting breaks or indentation spacing. It must present as one contiguous, continuous data string.
+*   **Numerical Standardizations:** Pointer fields and relative address bounds must be explicitly output as lowercase hexadecimal values prefixed with `0x`.
+*   **Module Name Normalization:** Library dependencies and export function names must be converted completely to lowercase text arrays before printing.
+
+### Verified Stdout JSON Schema Layout
 
 ```json
-{
-  "status_code": 200,
-  "file_metadata": {
-    "entry_point_rva": "0x00041A20",
-    "image_base": "0x140000000",
-    "subsystem": 3
-  },
-  "sections": [
-    {
-      "name": "string",
-      "raw_size": 0,
-      "virtual_size": 0,
-      "characteristics": "0x60000020"
-    }
-  ],
-  "imports": [
-    {
-      "library": "string",
-      "function": "string"
-    }
-  ]
-}
+{"status_code":200,"payload":{"entry_point_rva":"0x00041a20","image_base_va":"0x140000000","subsystem":3,"sections":[{"name":".text","raw_size":4096,"virtual_size":4100,"characteristics":"0x60000020"}],"imports":[{"module":"kernel32.dll","function":"virtualallocex"}]}}
 ```
 
-### Component Status Specification Codes
-*   **`200` (SUCCESS_VALID_PE):** The binary was read successfully and matches standard Windows PE structural rules.
-*   **`400` (MALFORMED_STRUCTURE):** The target file is corrupt, lacks valid magic byte signatures (`MZ`/`PE`), or triggers an out-of-bounds safety boundary exception.
-*   **`403` (ACCESS_DENIED):** The platform runtime toolchain lacks the security privileges required to open or map the physical target disk asset.
+## 3. Python Component Error Trapping Lifecycle
 
-## 3. Serialization Rules & Data Formatting
+The Python pipeline is required to scan the stream output for these explicit structural status declarations to protect the automation loop from parsing failures:
 
-To guarantee fast data validation and parsing across different systems, all data strings passing through the Phlegethon framework must adhere to these structural rules:
-
-*   **Memory Addresses:** Every pointer offset value, including the execution Entry Point and virtual Image Base address, must be passed as a hexadecimal string prefixed with a lowercase `0x`.
-*   **Segment Character Constraints:** Section names extracted from the binary must be passed as raw ASCII character strings. Any trailing space allocation or non-printable character block must be trimmed off completely before serialization.
-*   **Casing Rules:** To prevent casing mismatches from breaking automated threat rules, imported module names (DLLs) and specific API function strings must be converted completely to lowercase before being evaluated against signatures.
+*   **`200` (SUCCESS_VALIDATION_MATCH):** The file was mapped completely, passed integrity verification loops, and holds actionable metadata targets.
+*   **`400` (STRUCTURE_MALFORMED_EXCEPTION):** Target lacks valid PE structural signatures, or contains data corruption causing out-of-bounds mapping threats.
+*   **`403` (OS_ACCESS_DENIED):** Target cannot be accessed by the framework due to missing runtime administrative privileges.
