@@ -10,7 +10,7 @@ The framework relies on a decoupled, pipeline-driven architecture. To prevent la
   [ Target Binary ]
          │
          ▼
-  [ Analyzer Engine ]  ──(Stdout Pipe / Structured JSON String)──► [ Python Pipeline ]
+  [ Analyzer ]  ──(Stdout Pipe / Structured JSON String)──► [ Python Pipeline ]
   (C++ Header Parser)                                              (Orchestration / Math)
                                                                             │
                                                                             ▼
