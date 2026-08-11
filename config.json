@@ -1,26 +1,33 @@
 {
   "framework_metadata": {
-    "version": "1.0.0",
-    "environment": "production"
+    "version": "1.2.0",
+    "environment": "production",
+    "engine_mode": "asynchronous_triage"
   },
   "ingestion_pipeline": {
-    "supported_extensions": [".exe", ".dll", ".sys"],
-    "max_file_size_bytes": 104857600,
+    "supported_extensions": [".exe", ".dll", ".sys", ".drv", ".efi"],
+    "max_file_size_bytes": 209715200,
     "recursive_directory_scan": true
   },
-  "static_analysis_heuristics": {
-    "verify_pe_checksum": true,
-    "max_allowed_sections": 8,
-    "entropy_triage": {
-      "calculate_per_section": true,
+  "heuristic_engine_thresholds": {
+    "global_risk_limit_malicious": 45,
+    "global_risk_limit_suspicious": 20,
+    "minimum_import_density_ratio": 0.05,
+    "section_alignment_bounds": {
+      "max_hollowing_ratio_deviation": 3.0,
+      "flag_zero_raw_size_executable_sections": true
+    },
+    "sliding_window_entropy": {
       "block_size_bytes": 4096,
-      "suspicious_threshold": 7.2,
-      "critical_packed_threshold": 7.85
+      "step_stride_bytes": 512,
+      "suspicious_entropy_limit": 7.20,
+      "critical_packed_limit": 7.88
     }
   },
   "telemetry_output": {
     "generate_json_report": true,
     "pretty_print_json": true,
-    "target_destination_directory": "./reports/triage_dumps/"
+    "target_destination_directory": "./reports/triage_dumps/",
+    "anonymize_local_execution_paths": true
   }
 }
