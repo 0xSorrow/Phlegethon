@@ -4,128 +4,146 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <iomanip>
 
 struct ThreatSignature {
     std::string api_name;
     std::string category;
-    int weight; // 1 = Low, 2 = Medium, 3 = Critical
+    int weight; // 1 = Low risk anomaly, 2 = Medium capability, 3 = High risk/Malicious primitive
 };
 
-// Expanded list of critical APIs often targeted for inspection
-const std::vector<ThreatSignature> API_WATCHLIST = {
-    {"virtualallocex", "PROCESS_INJECTION", 3},
-    {"writeprocessmemory", "PROCESS_INJECTION", 3},
-    {"createremotethread", "PROCESS_INJECTION", 3},
-    {"ntsetcontextthread", "PROCESS_HOLLOWING", 3},
-    {"ntresumethread", "PROCESS_HOLLOWING", 3},
-    {"ntunmapviewofsection", "PROCESS_HOLLOWING", 3},
+// Advanced comprehensive watchlist mapping critical Windows API combinations
+const std::vector<ThreatSignature> EXTENDED_WATCHLIST = {
+    // Process Injection / Memory Manipulation primitives
+    {"virtualallocex", "INJECTION_ALLOCATION", 3},
+    {"writeprocessmemory", "INJECTION_WRITING", 3},
+    {"createremotethread", "INJECTION_EXECUTION", 3},
     {"queueuserapc", "APC_INJECTION", 3},
+    {"ntqueueapcthread", "APC_INJECTION", 3},
+    {"virtualprotectex", "MEMORY_PERMISSION_FLIP", 2},
+    
+    // Process Hollowing & Thread Hijacking
+    {"ntsetcontextthread", "THREAD_HIJACKING", 3},
+    {"setthreadcontext", "THREAD_HIJACKING", 3},
+    {"ntresumethread", "THREAD_HIJACKING", 3},
+    {"ntunmapviewofsection", "PROCESS_HOLLOWING", 3},
+    {"zwunmapviewofsection", "PROCESS_HOLLOWING", 3},
+    
+    // Evasion, Anti-Analysis, and Anti-Debugging
     {"isdebuggerpresent", "ANTI_DEBUGGING", 1},
     {"checkremotedebuggerpresent", "ANTI_DEBUGGING", 1},
-    {"ntqueryinformationprocess", "ANTI_DEBUGGING", 2},
-    {"ntdelayexecution", "SANDBOX_DELAY", 1},
-    {"sleepex", "SANDBOX_DELAY", 1},
-    {"cryptdecrypt", "CRYPTOGRAPHY", 2},
-    {"cryptencrypt", "CRYPTOGRAPHY", 2},
-    {"bcrypthashdata", "CRYPTOGRAPHY", 1},
-    {"regsetvalueexw", "PERSISTENCE", 2},
-    {"regsetvalueexa", "PERSISTENCE", 2},
-    {"createservicea", "PERSISTENCE", 3},
-    {"urldownloadtofilea", "NETWORK_INGESTION", 3},
-    {"internetopenw", "NETWORK_INGESTION", 2},
-    {"winhttprequest", "NETWORK_INGESTION", 2}
+    {"ntqueryinformationprocess", "ANTI_DEBUG_OR_INFO_GATHER", 2},
+    {"ntdelayexecution", "SANDBOX_TIMING_DELAY", 1},
+    {"sleepex", "SANDBOX_TIMING_DELAY", 1},
+    {"outputdebugstringa", "ANTI_ANALYSIS", 1},
+    
+    // Credential Dumping, Token Manipulation & Privilege Escalation
+    {"openprocesstoken", "PRIVILEGE_ESCALATION", 2},
+    {"adjusttokenprivileges", "PRIVILEGE_ESCALATION", 3},
+    {"lookupprivilegevaluea", "PRIVILEGE_ESCALATION", 2},
+    {"samopenhandle", "CREDENTIAL_STEALING", 3},
+    {"samigetprivatedata", "CREDENTIAL_STEALING", 3},
+    
+    // Persistence Mechanisms
+    {"regsetvalueexw", "REGISTRY_PERSISTENCE", 2},
+    {"regsetvalueexa", "REGISTRY_PERSISTENCE", 2},
+    {"createservicea", "SERVICE_PERSISTENCE", 3},
+    {"createservicew", "SERVICE_PERSISTENCE", 3},
+    
+    // C2 Infrastructure Communication / Network Ingestion
+    {"urldownloadtofilea", "NETWORK_DOWNLOADER", 3},
+    {"internetopenw", "NETWORK_C2", 2},
+    {"internetconnectw", "NETWORK_C2", 2},
+    {"httpopensendrequestw", "NETWORK_C2", 3},
+    {"wsastartup", "NETWORK_SOCKET_INIT", 1}
 };
 
-std::vector<uint8_t> MapBinaryBuffer(const std::string& target_path) {
-    std::ifstream stream(target_path, std::ios::binary | std::ios::ate);
+std::vector<uint8_t> IngestPhysicalFile(const std::string& path) {
+    std::ifstream stream(path, std::ios::binary | std::ios::ate);
     if (!stream.is_open()) {
-        std::cerr << "[-] Error: Failed to open targeted file path: " << target_path << std::endl;
+        std::cerr << "[-] Error: Failed to open path: " << path << std::endl;
         return {};
     }
-
-    std::streamsize physical_size = stream.tellg();
+    std::streamsize size = stream.tellg();
     stream.seekg(0, std::ios::beg);
-
-    std::vector<uint8_t> allocation_buffer(static_cast<size_t>(physical_size));
-    if (!stream.read(reinterpret_cast<char*>(allocation_buffer.data()), physical_size)) {
-        std::cerr << "[-] Error: Failed reading stream into continuous memory block." << std::endl;
-        return {};
-    }
-
-    return allocation_buffer;
+    std::vector<uint8_t> buffer(static_cast<size_t>(size));
+    stream.read(reinterpret_cast<char*>(buffer.data()), size);
+    return buffer;
 }
 
-void EvaluateImportSignatures(const std::vector<Phlegethon::Core::ImportedSymbol>& resolved_imports, int& cumulative_score, int& flag_count) {
-    std::cout << "[*] Running API mutation and sequence threat parsing loops..." << std::endl;
-    
-    for (const auto& found_import : resolved_imports) {
-        std::string normalized_import = found_import.symbol_name;
-        std::transform(normalized_import.begin(), normalized_import.end(), normalized_import.begin(), ::tolower);
+void ParseWatchlistHeuristics(const std::vector<Phlegethon::Core::ImportedSymbol>& imports, int& risk_score, int& match_count) {
+    for (const auto& imp : imports) {
+        std::string normalized = imp.symbol_name;
+        std::transform(normalized.begin(), normalized.end(), normalized.begin(), ::tolower);
 
-        for (const auto& watch_target : API_WATCHLIST) {
-            if (normalized_import == watch_target.api_name) {
-                flag_count++;
-                cumulative_score += (watch_target.weight == 3) ? 12 : (watch_target.weight == 2) ? 6 : 2;
+        for (const auto& sig : EXTENDED_WATCHLIST) {
+            if (normalized == sig.api_name) {
+                match_count++;
+                // Advanced algorithmic weighting multiplier for critical clusters
+                risk_score += (sig.weight == 3) ? 15 : (sig.weight == 2) ? 7 : 2;
                 
-                std::string severity = (watch_target.weight == 3) ? "CRITICAL" : (watch_target.weight == 2) ? "MEDIUM" : "LOW";
-                std::cout << "  [!] MATCH: Symbol -> " << found_import.symbol_name 
-                          << " [" << watch_target.category << "] | Severity: " << severity << std::endl;
+                std::string lvl = (sig.weight == 3) ? "CRITICAL" : (sig.weight == 2) ? "MEDIUM" : "LOW";
+                std::cout << "  [!] MATCH -> " << std::left << std::setw(25) << imp.symbol_name 
+                          << " | Vector: " << std::setw(25) << sig.category 
+                          << " | Risk: " << lvl << std::endl;
             }
         }
     }
 }
 
-void ProcessTargetAsset(const std::string& binary_path) {
-    std::vector<uint8_t> raw_buffer = MapBinaryBuffer(binary_path);
-    if (raw_buffer.empty()) return;
+void ExecuteAdvancedTriagePipeline(const std::string& path) {
+    std::vector<uint8_t> raw_bytes = IngestPhysicalFile(path);
+    if (raw_bytes.empty()) return;
 
-    auto evaluation = Phlegethon::Core::ParseTargetBinary(raw_buffer);
-    if (!evaluation.integrity_validated) {
-        std::cerr << "[-] Error: Core validation failed. Executable format signatures are invalid or corrupted." << std::endl;
+    auto pe_data = Phlegethon::Core::ParseTargetBinary(raw_bytes);
+    if (!pe_data.integrity_validated) {
+        std::cerr << "[-] Error: Asset structural checks failed. Target is corrupted or non-PE." << std::endl;
         return;
     }
 
-    std::cout << "[+] Architectural Alignment Verified." << std::endl;
-    std::cout << "  |-- Entry Point RVA:  0x" << std::hex << evaluation.address_of_entry_point << std::dec << std::endl;
-    std::cout << "  |-- Target Image Base: 0x" << std::hex << evaluation.image_base_address << std::dec << std::endl;
-    std::cout << "  |-- Target Subsystem: " << evaluation.subsystem_type << std::endl;
+    std::cout << "[+] Header Structural Integrity Verified." << std::endl;
+    std::cout << "  |-- Entry Point Address: 0x" << std::hex << pe_data.address_of_entry_point << std::dec << std::endl;
+    std::cout << "  |-- Image Base Virtual Address: 0x" << std::hex << pe_data.image_base_address << std::dec << std::endl;
 
-    std::cout << "[*] Validating physical segment names..." << std::endl;
-    int structural_risk_weight = 0;
-    for (const auto& current_section : evaluation.structural_sections) {
-        std::cout << "  -> Directory Section: " << current_section << std::endl;
+    // Advanced Section Obfuscation Scan
+    int accumulated_score = 0;
+    std::cout << "[*] Parsing physical segment identifiers..." << std::endl;
+    for (const auto& section : pe_data.structural_sections) {
+        std::string lower_sec = section;
+        std::transform(lower_sec.begin(), lower_sec.end(), lower_sec.begin(), ::tolower);
         
-        std::string continuous_name = current_section;
-        std::transform(continuous_name.begin(), continuous_name.end(), continuous_name.begin(), ::tolower);
-        
-        if (continuous_name.find("upx") != std::string::npos || 
-            continuous_name.find("vmp") != std::string::npos || 
-            continuous_name.find("themida") != std::string::npos ||
-            continuous_name.find(".aspack") != std::string::npos) {
-            std::cout << "    [!] High Risk: Packing layer signature matched: " << current_section << std::endl;
-            structural_risk_weight += 20;
+        // Flag common packing/protector signatures
+        if (lower_sec.find("upx") != std::string::npos || lower_sec.find("vmp") != std::string::npos || 
+            lower_sec.find("themida") != std::string::npos || lower_sec.find("aspack") != std::string::npos) {
+            std::cout << "    [!] Alert: Obfuscation packing signature matched in section: " << section << std::endl;
+            accumulated_score += 25; 
         }
     }
 
-    int heuristic_score = structural_risk_weight;
-    int triggered_signatures = 0;
+    int matched_signatures_count = 0;
+    ParseWatchlistHeuristics(pe_data.resolved_imports, accumulated_score, matched_signatures_count);
 
-    EvaluateImportSignatures(evaluation.resolved_imports, heuristic_score, triggered_signatures);
+    // Advanced Operational Metrics Density Check
+    // High file size combined with suspiciously few resolved imports indicates a packed or stripped binary
+    if (raw_bytes.size() > 500000 && pe_data.resolved_imports.size() < 15) {
+        std::cout << "  [!] Anomaly: Low import density detected for file size. High probability of an encrypted payload stub." << std::endl;
+        accumulated_score += 20;
+    }
 
     std::cout << "\n=========================================================" << std::endl;
-    std::cout << "PHLEGETHON STATIC ANALYSIS MATRIX VERDICT" << std::endl;
+    std::cout << "PHLEGETHON RISK ASSESSMENT" << std::endl;
     std::cout << "=========================================================" << std::endl;
-    std::cout << "  Resolved Import Elements : " << evaluation.resolved_imports.size() << std::endl;
-    std::cout << "  Triggered Rules Matches  : " << triggered_signatures << std::endl;
-    std::cout << "  Calculated Risk Matrix Score  : " << heuristic_score << std::endl;
+    std::cout << "  Total Extracted Imports       : " << pe_data.resolved_imports.size() << std::endl;
+    std::cout << "  Heuristic Pattern Matches     : " << matched_signatures_count << std::endl;
+    std::cout << "  Calculated Aggregated Threat Vector Score : " << accumulated_score << std::endl;
     std::cout << "---------------------------------------------------------" << std::endl;
 
-    if (heuristic_score >= 35) {
-        std::cout << "  [VERDICT] MALICIOUS_ANOMALIES_DETECTED (High structural risk score)" << std::endl;
-    } else if (heuristic_score >= 15) {
-        std::cout << "  [VERDICT] SUSPICIOUS_ASSET (Requires containment isolation sandboxing)" << std::endl;
+    if (accumulated_score >= 45) {
+        std::cout << "  [VERDICT] STATUS_MALICIOUS_INDICATORS_ENCOUNTERED" << std::endl;
+    } else if (accumulated_score >= 20) {
+        std::cout << "  [VERDICT] STATUS_SUSPICIOUS_ASSET_REQUIRES_CONTAINMENT" << std::endl;
     } else {
-        std::cout << "  [VERDICT] STRUCTURE_CLEAN (No heuristic baseline signatures matched)" << std::endl;
+        std::cout << "  [VERDICT] STATUS_ASSET_STRUCTURE_CLEAN" << std::endl;
     }
     std::cout << "=========================================================" << std::endl;
 }
@@ -135,9 +153,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "Usage Error. Syntax: .\\CoreAnalyzer.exe <target_file_path>" << std::endl;
         return 1;
     }
-    ProcessTargetAsset(argv[1]);
+    ExecuteAdvancedTriagePipeline(argv[1]);
     return 0;
 }
 
-    return 0;
-}
