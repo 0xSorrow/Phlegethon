@@ -10,21 +10,7 @@ The framework is architected using a decoupled, multi-language paradigm to balan
 *   **Orchestration Engine (Python):** Manages asynchronous file workflows, implements mathematical algorithms, and handles data consolidation.
 *   **Data Exchange Layer (JSON):** Serves as the universal serialization format, standardizing structural observations into schema-validated outputs compatible with SIEM, SOAR, and central threat databases.
 
-## 2. Directory Layout
-
-```text
-Phlegethon/
-├── Analyzer/           # Native binary decoding and parsing components (C++)
-│   ├── main.cpp
-│   └── HeaderParser.h
-├── Analysis/         # Analytical algorithms and data automation pipelines (Python)
-│   ├── pipeline.py
-│   └── entropy.py
-└── Schema/                 # Telemetry definitions and output formatting rules
-    └── report_template.json
-```
-
-## 3. Technical Specifications & Functional Vectors
+## 2. Technical Specifications & Functional Vectors
 
 ### Structural Integrity Verification
 *   Validates physical file magic signatures (`MZ` / `PE`) and verifies offset references.
@@ -41,11 +27,11 @@ Phlegethon/
 *   Normalizes disparate technical metrics into uniform indicators of compromise (IoC).
 *   Enables frictionless integrations with internal analytics platforms via machine-readable JSON dumps.
 
-## 4. Development & Deployment Requirements
+## 3. Development & Deployment Requirements
 
 *   **Compiler Toolchain:** MSVC / GCC conforming to standard C++17 or higher.
 *   **Runtime Environment:** Python 3.10+ (Standard deployment utilizes core mathematical packages with zero external dependencies).
 *   **Target Architectures:** Windows / Linux (Cross-platform compatibility for static data analysis).
 
-## 5. License & Operational Notice
+## 4. License & Operational Notice
 This software is intended exclusively for authorized system monitoring, defensive security research, academic study, and administrative triage workflows.
