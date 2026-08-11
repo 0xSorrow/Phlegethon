@@ -14,7 +14,7 @@ The framework is architected using a decoupled, multi-language paradigm to balan
 
 ```text
 Phlegethon/
-├── CoreAnalyzer/           # Native binary decoding and parsing components (C++)
+├── Analyzer/           # Native binary decoding and parsing components (C++)
 │   ├── main.cpp
 │   └── HeaderParser.h
 ├── AnalysisEngine/         # Analytical algorithms and data automation pipelines (Python)
