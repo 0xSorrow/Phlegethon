@@ -17,7 +17,7 @@ Phlegethon/
 ├── Analyzer/           # Native binary decoding and parsing components (C++)
 │   ├── main.cpp
 │   └── HeaderParser.h
-├── AnalysisEngine/         # Analytical algorithms and data automation pipelines (Python)
+├── Analysis/         # Analytical algorithms and data automation pipelines (Python)
 │   ├── pipeline.py
 │   └── entropy.py
 └── Schema/                 # Telemetry definitions and output formatting rules
