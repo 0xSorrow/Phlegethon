@@ -1,0 +1,29 @@
+{
+  "signature_manifest_metadata": {
+    "total_signatures_loaded": 21,
+    "last_updated_version": "2026.08.11"
+  },
+  "behavioral_signature_watchlist": [
+    { "api_name": "virtualallocex", "category": "INJECTION_ALLOCATION", "weight": 3 },
+    { "api_name": "writeprocessmemory", "category": "INJECTION_WRITING", "weight": 3 },
+    { "api_name": "createremotethread", "category": "INJECTION_EXECUTION", "weight": 3 },
+    { "api_name": "queueuserapc", "category": "APC_INJECTION", "weight": 3 },
+    { "api_name": "ntqueueapcthread", "category": "APC_INJECTION", "weight": 3 },
+    { "api_name": "virtualprotectex", "category": "MEMORY_PERMISSION_FLIP", "weight": 2 },
+    { "api_name": "ntsetcontextthread", "category": "THREAD_HIJACKING", "weight": 3 },
+    { "api_name": "setthreadcontext", "category": "THREAD_HIJACKING", "weight": 3 },
+    { "api_name": "ntresumethread", "category": "THREAD_HIJACKING", "weight": 3 },
+    { "api_name": "ntunmapviewofsection", "category": "PROCESS_HOLLOWING", "weight": 3 },
+    { "api_name": "zwunmapviewofsection", "category": "PROCESS_HOLLOWING", "weight": 3 },
+    { "api_name": "isdebuggerpresent", "category": "ANTI_DEBUGGING", "weight": 1 },
+    { "api_name": "checkremotedebuggerpresent", "category": "ANTI_DEBUGGING", "weight": 1 },
+    { "api_name": "ntqueryinformationprocess", "category": "ANTI_DEBUG_OR_INFO_GATHER", "weight": 2 },
+    { "api_name": "ntdelayexecution", "category": "SANDBOX_TIMING_DELAY", "weight": 1 },
+    { "api_name": "sleepex", "category": "SANDBOX_TIMING_DELAY", "weight": 1 },
+    { "api_name": "openprocesstoken", "category": "PRIVILEGE_ESCALATION", "weight": 2 },
+    { "api_name": "adjusttokenprivileges", "category": "PRIVILEGE_ESCALATION", "weight": 3 },
+    { "api_name": "createservicea", "category": "SERVICE_PERSISTENCE", "weight": 3 },
+    { "api_name": "urldownloadtofilea", "category": "NETWORK_DOWNLOADER", "weight": 3 },
+    { "api_name": "internetopenw", "category": "NETWORK_C2", "weight": 2 }
+  ]
+}
